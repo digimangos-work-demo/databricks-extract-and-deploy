@@ -1,0 +1,43 @@
+name: Extract databricks config
+
+on: [workflow_dispatch]
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    environment: Dev
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Set up Python 3
+      uses: actions/setup-python@v3
+      with: 
+        python-version: 3.8
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install libx11-dev -y
+    - name: Install pip requirements
+      run: |
+           pip install --upgrade pip
+           pip install databricks-cli
+        
+    - name: Extract and push results
+      env:
+        DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PAT }}
+        DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      run: |
+        if [ -d "Workspace" ]; then rm -Rf Workspace; fi
+        mkdir -p Workspace
+        databricks workspace export_dir -o /Shared ./Workspace
+
+        git config --global user.email "automation@shell.com"
+        git config --global user.name "ADF Automation"
+        if [[ `git status --porcelain` ]]; then
+          git add .
+          git commit -m "Updated databricks config: `date +'%Y-%m-%d %H:%M:%S'`"
+          git push
+        fi

@@ -1,0 +1,33 @@
+name: Deploy databricks config
+
+on: [workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    environment: QA
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Set up Python 3
+      uses: actions/setup-python@v3
+      with: 
+        python-version: 3.8
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install libx11-dev -y
+    - name: Install pip requirements
+      run: |
+           pip install --upgrade pip
+           pip install databricks-cli
+        
+    - name: Deploy
+      env:
+        DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_PAT }}
+        DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      run: |
+        databricks workspace import_dir -o ./Workspace /Shared
